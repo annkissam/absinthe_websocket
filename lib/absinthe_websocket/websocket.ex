@@ -12,7 +12,7 @@ defmodule AbsintheWebSocket.WebSocket do
     subscription_server = Keyword.get(args, :subscription_server)
     full_url = "#{url}?token=#{token}"
     state = %{subscriptions: %{}, queries: %{}, msg_ref: 0, heartbeat_timer: nil, socket: name, subscription_server: subscription_server}
-    WebSockex.start_link(full_url, __MODULE__, state, handle_initial_conn_failure: true, name: name)
+    WebSockex.start_link(full_url, __MODULE__, state, handle_initial_conn_failure: true, async: true, name: name)
   end
 
   def query(socket, pid, ref, query, variables \\ []) do
