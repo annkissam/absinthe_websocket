@@ -165,19 +165,40 @@ defmodule AbsintheWebSocket.WebSocket do
     {command, queries} = Map.pop(queries, msg_ref)
     state = Map.put(state, :queries, queries)
 
+    status = payload["status"] |> String.to_atom()
+
     state = case command do
       {:query, pid, ref} ->
-        data = payload["response"]["data"]
-        GenServer.cast(pid, {:query_response, ref, data})
+        case status do
+          :ok ->
+            data = payload["response"]["data"]
+            GenServer.cast(pid, {:query_response, ref, {status, data}})
+          :error ->
+            errors = payload["response"]["errors"]
+            GenServer.cast(pid, {:query_response, ref, {status, errors}})
+        end
         state
       {:subscribe, pid, subscription_name} ->
+        unless status == :ok do
+          raise "Subscription Error - #{inspect payload}"
+        end
+
         subscription_id = payload["response"]["subscriptionId"]
         subscriptions = Map.put(state.subscriptions, subscription_id, {pid, subscription_name})
         Map.put(state, :subscriptions, subscriptions)
       {:join} ->
+        unless status == :ok do
+          raise "Join Error - #{inspect payload}"
+        end
+
         GenServer.cast(state.subscription_server, {:joined})
+
         state
       {:heartbeat} ->
+        unless status == :ok do
+          raise "Heartbeat Error - #{inspect payload}"
+        end
+
         state
     end
 
