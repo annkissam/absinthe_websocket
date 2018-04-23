@@ -1,0 +1,3 @@
+%{
+  "websockex": {:hex, :websockex, "0.4.1", "d7b7191ec3d5dd136683b60114405a5a130a175faade773a07cb52dbd98f9442", [:mix], [], "hexpm"},
+}

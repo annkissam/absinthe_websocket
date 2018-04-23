@@ -7,7 +7,8 @@ defmodule AbsintheWebsocket.Mixfile do
       version: "0.1.0",
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases(),
     ]
   end
 
@@ -23,5 +24,14 @@ defmodule AbsintheWebsocket.Mixfile do
     [
       {:websockex, "~> 0.4"},
     ]
+  end
+
+  defp aliases do
+    ["publish": [&git_tag/1]]
+  end
+
+  defp git_tag(_args) do
+    System.cmd "git", ["tag", "v" <> Mix.Project.config[:version]]
+    System.cmd "git", ["push", "--tags"]
   end
 end
