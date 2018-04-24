@@ -23,6 +23,7 @@ defmodule AbsintheWebsocket.Mixfile do
   defp deps do
     [
       {:websockex, "~> 0.4"},
+      {:poison, "~> 2.0 or ~> 3.0"},
     ]
   end
 
