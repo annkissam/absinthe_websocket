@@ -9,8 +9,12 @@ defmodule AbsintheWebSocket.WebSocket do
     name = Keyword.get(opts, :name)
     url = Keyword.get(args, :url)
     token = Keyword.get(args, :token)
-    query = URI.encode_query(%{"token" => token})
-    full_url = "#{url}?#{query}"
+    full_url = if token do
+      query = URI.encode_query(%{"token" => token})
+      "#{url}?#{query}"
+    else
+      url
+    end
     subscription_server = Keyword.get(args, :subscription_server)
     state = %{subscriptions: %{}, queries: %{}, msg_ref: 0, heartbeat_timer: nil, socket: name, subscription_server: subscription_server}
     WebSockex.start_link(full_url, __MODULE__, state, handle_initial_conn_failure: true, async: true, name: name)
@@ -70,7 +74,7 @@ defmodule AbsintheWebSocket.WebSocket do
     msg = %{
       topic: "__absinthe__:control",
       event: "phx_join",
-      payload: %{token: "TEST"},
+      payload: %{},
       ref: msg_ref
     } |> Poison.encode!
 

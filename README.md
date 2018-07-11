@@ -1,4 +1,4 @@
-# AbsintheWebsocket
+# AbsintheWebSocket
 
 **TODO: Add description**
 

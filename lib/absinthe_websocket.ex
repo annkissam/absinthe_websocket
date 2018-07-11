@@ -1,5 +1,5 @@
-defmodule AbsintheWebsocket do
+defmodule AbsintheWebSocket do
   @moduledoc """
-  Documentation for AbsintheWebsocket.
+  Documentation for AbsintheWebSocket.
   """
 end

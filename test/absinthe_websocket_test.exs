@@ -1,4 +1,4 @@
-defmodule AbsintheWebsocketTest do
+defmodule AbsintheWebSocketTest do
   use ExUnit.Case
-  doctest AbsintheWebsocket
+  doctest AbsintheWebSocket
 end
