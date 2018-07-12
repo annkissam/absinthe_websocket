@@ -35,6 +35,7 @@ defmodule AbsintheWebSocket.Mixfile do
     [
       {:websockex, "~> 0.4"},
       {:poison, "~> 2.0 or ~> 3.0"},
+      {:ex_doc, "~> 0.10", only: :dev},
     ]
   end
 
