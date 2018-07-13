@@ -1,6 +1,6 @@
 # AbsintheWebSocket
 
-This libary uses WebSockets to communicate with a GraphQL endpoint built using Absinthe and Phoenix Channels. It's primary goal is to allow clients to use [Subscriptions](https://hexdocs.pm/absinthe/subscriptions.html), although it also supports queries. It uses [WebSockex](https://github.com/Azolo/websockex) as a WebSocket client. It also handles the specifics of Phoenix Channels (heartbeats) and how Absinthe subscriptions were implemented on top of them.
+This libary uses WebSockets to communicate with a GraphQL endpoint built using Absinthe and Phoenix Channels. Its primary goal is to allow clients to use [Subscriptions](https://hexdocs.pm/absinthe/subscriptions.html), although it also supports queries. It uses [WebSockex](https://github.com/Azolo/websockex) as a WebSocket client. It also handles the specifics of Phoenix Channels (heartbeats) and how Absinthe subscriptions were implemented on top of them.
 
 ## Documentation
 
