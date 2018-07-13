@@ -1,21 +1,13 @@
 # AbsintheWebSocket
 
-**TODO: Add description**
+This libary uses WebSockets to communicate with a GraphQL endpoint built using Absinthe and Phoenix Channels. It's primary goal is to allow clients to use [Subscriptions](https://hexdocs.pm/absinthe/subscriptions.html), although it also supports queries. It uses [WebSockex](https://github.com/Azolo/websockex) as a WebSocket client. It also handles the specifics of Phoenix Channels (heartbeats) and how Absinthe subscriptions were implemented on top of them.
+
+## Documentation
+
+Docs can be found at [https://hexdocs.pm/absinthe_websocket](https://hexdocs.pm/absinthe_websocket).
+
+A complete walkthrough can be found on the Annkissam Alembic. It also has an associated [demo](https://github.com/annkissam/absinthe_websocket_demo).
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `absinthe_websocket` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:absinthe_websocket, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/absinthe_websocket](https://hexdocs.pm/absinthe_websocket).
-
+The simplest way to get started is to use the [common_graphql_client](https://github.com/annkissam/common_graphql_client). The readme and associated tutorial walk through the complete installation.
