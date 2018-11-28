@@ -28,6 +28,10 @@ defmodule AbsintheWebSocket.WebSocket do
     WebSockex.cast(socket, {:subscribe, {pid, subscription_name, query, variables}})
   end
 
+  def unsubscribe(socket, pid, subscription_name) do
+    WebSockex.cast(socket, {:unsubscribe, {pid, subscription_name}})
+  end
+
   def handle_connect(_conn, %{socket: socket} = state) do
     # Logger.info "#{__MODULE__} - Connected: #{inspect conn}"
 
@@ -150,6 +154,32 @@ defmodule AbsintheWebSocket.WebSocket do
     {:reply, {:text, msg}, state}
   end
 
+  def handle_cast({:unsubscribe, {pid, subscription_name}}, %{queries: queries, msg_ref: msg_ref} = state) do
+    subscription = Enum.find(state.subscriptions, fn
+      {_, {^pid, ^subscription_name}} -> true
+      _ -> false
+    end)
+
+    with {subscription_id, _} <- subscription do
+      msg = %{
+        topic: "__absinthe__:control",
+        event: "unsubscribe",
+        payload: %{"subscriptionId" => subscription_id},
+        ref: msg_ref
+      } |> Poison.encode!
+
+      queries = Map.put(queries, msg_ref, {:unsubscribe, pid, subscription_name})
+
+      state = state
+      |> Map.put(:queries, queries)
+      |> Map.put(:msg_ref, msg_ref + 1)
+
+      {:reply, {:text, msg}, state}
+    else
+      _ -> {:ok, state}
+    end
+  end
+
   def handle_cast(message, state) do
     Logger.info "#{__MODULE__} - Cast: #{inspect message}"
 
@@ -190,6 +220,14 @@ defmodule AbsintheWebSocket.WebSocket do
 
         subscription_id = payload["response"]["subscriptionId"]
         subscriptions = Map.put(state.subscriptions, subscription_id, {pid, subscription_name})
+        Map.put(state, :subscriptions, subscriptions)
+      {:unsubscribe, _pid, _subscription_name} ->
+        unless status == :ok do
+          raise "Unsubscribe Error - #{inspect payload}"
+        end
+
+        subscription_id = payload["response"]["subscriptionId"]
+        subscriptions = Map.delete(state.subscriptions, subscription_id)
         Map.put(state, :subscriptions, subscriptions)
       {:join} ->
         unless status == :ok do
