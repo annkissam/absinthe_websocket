@@ -21,11 +21,24 @@ defmodule AbsintheWebSocket.SubscriptionServer do
     GenServer.cast(mod, {:subscribe, subscription_name, callback, query, variables})
   end
 
+  def unsubscribe(mod, subscription_name) do
+    GenServer.cast(mod, {:unsubscribe, subscription_name})
+  end
+
   def handle_cast({:subscribe, subscription_name, callback, query, variables}, %{socket: socket, subscriptions: subscriptions} = state) do
     AbsintheWebSocket.WebSocket.subscribe(socket, self(), subscription_name, query, variables)
 
     callbacks = Map.get(subscriptions, subscription_name, [])
     subscriptions = Map.put(subscriptions, subscription_name, [callback | callbacks])
+    state = Map.put(state, :subscriptions, subscriptions)
+
+    {:noreply, state}
+  end
+
+  def handle_cast({:unsubscribe, subscription_name}, %{socket: socket, subscriptions: subscriptions} = state) do
+    AbsintheWebSocket.WebSocket.unsubscribe(socket, self(), subscription_name)
+
+    subscriptions = Map.delete(subscriptions, subscription_name)
     state = Map.put(state, :subscriptions, subscriptions)
 
     {:noreply, state}
