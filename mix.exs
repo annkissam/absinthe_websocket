@@ -1,7 +1,7 @@
 defmodule AbsintheWebSocket.Mixfile do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.1"
   @url "https://github.com/annkissam/absinthe_websocket"
   @maintainers [
     "Eric Sullivan",
@@ -57,7 +57,7 @@ defmodule AbsintheWebSocket.Mixfile do
   end
 
   defp aliases do
-    ["publish": ["hex.publish", &git_tag/1]]
+    [publish: ["hex.publish", &git_tag/1]]
   end
 
   defp git_tag(_args) do
