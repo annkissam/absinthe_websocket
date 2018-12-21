@@ -17,10 +17,7 @@ defmodule AbsintheWebSocket.WebSocket do
     end
     subscription_server = Keyword.get(args, :subscription_server)
     resubscribe_on_disconnect = Keyword.get(args, :resubscribe_on_disconnect, false)
-    disconnect_sleep = case Keyword.get(args, :disconnect_sleep) do
-      nil -> @disconnect_sleep
-      sleep -> sleep
-    end
+    disconnect_sleep = Keyword.get(args, :disconnect_sleep, @disconnect_sleep)
     state = %{
       subscriptions: %{},
       subscriptions_info: %{},
