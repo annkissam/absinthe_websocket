@@ -71,7 +71,7 @@ defmodule AbsintheWebSocket.WebSocket do
 
     state = Map.put(state, :heartbeat_timer, nil)
 
-    :timer.sleep(Map.get(state, :disconnect_sleep, @disconnect_sleep))
+    :timer.sleep(state.disconnect_sleep)
 
     {:reconnect, state}
   end
