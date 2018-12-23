@@ -194,7 +194,7 @@ defmodule AbsintheWebSocket.WebSocket do
       subscriptions_info =
         state
         |> Map.get(:subscriptions_info, %{})
-        |> Map.drop(subscription_name)
+        |> Map.delete(subscription_name)
 
       state = state
       |> Map.put(:queries, queries)
