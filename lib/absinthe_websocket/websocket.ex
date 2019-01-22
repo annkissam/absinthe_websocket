@@ -16,7 +16,19 @@ defmodule AbsintheWebSocket.WebSocket do
       url
     end
     subscription_server = Keyword.get(args, :subscription_server)
-    state = %{subscriptions: %{}, queries: %{}, msg_ref: 0, heartbeat_timer: nil, socket: name, subscription_server: subscription_server}
+    resubscribe_on_disconnect = Keyword.get(args, :resubscribe_on_disconnect, false)
+    disconnect_sleep = Keyword.get(args, :disconnect_sleep, @disconnect_sleep)
+    state = %{
+      subscriptions: %{},
+      subscriptions_info: %{},
+      queries: %{},
+      msg_ref: 0,
+      heartbeat_timer: nil,
+      socket: name,
+      subscription_server: subscription_server,
+      resubscribe_on_disconnect: resubscribe_on_disconnect,
+      disconnect_sleep: disconnect_sleep
+    }
     WebSockex.start_link(full_url, __MODULE__, state, handle_initial_conn_failure: true, async: true, name: name)
   end
 
@@ -37,6 +49,9 @@ defmodule AbsintheWebSocket.WebSocket do
 
     WebSockex.cast(socket, {:join})
 
+    # resubscribe on reconnect (i.e. subscriptions already exist in state)
+    if Map.get(state, :resubscribe_on_disconnect), do: handle_resubscribe(socket, state)
+
     # Send a heartbeat
     heartbeat_timer = Process.send_after(self(), :heartbeat, @heartbeat_sleep)
     state = Map.put(state, :heartbeat_timer, heartbeat_timer)
@@ -53,7 +68,7 @@ defmodule AbsintheWebSocket.WebSocket do
 
     state = Map.put(state, :heartbeat_timer, nil)
 
-    :timer.sleep(@disconnect_sleep)
+    :timer.sleep(state.disconnect_sleep)
 
     {:reconnect, state}
   end
@@ -147,9 +162,15 @@ defmodule AbsintheWebSocket.WebSocket do
 
     queries = Map.put(queries, msg_ref, {:subscribe, pid, subscription_name})
 
+    subscriptions_info =
+      state
+      |> Map.get(:subscriptions_info, %{})
+      |> Map.put(subscription_name, {pid, query, variables})
+
     state = state
     |> Map.put(:queries, queries)
     |> Map.put(:msg_ref, msg_ref + 1)
+    |> Map.put(:subscriptions_info, subscriptions_info)
 
     {:reply, {:text, msg}, state}
   end
@@ -170,9 +191,15 @@ defmodule AbsintheWebSocket.WebSocket do
 
       queries = Map.put(queries, msg_ref, {:unsubscribe, pid, subscription_name})
 
+      subscriptions_info =
+        state
+        |> Map.get(:subscriptions_info, %{})
+        |> Map.delete(subscription_name)
+
       state = state
       |> Map.put(:queries, queries)
       |> Map.put(:msg_ref, msg_ref + 1)
+      |> Map.put(:subscriptions_info, subscriptions_info)
 
       {:reply, {:text, msg}, state}
     else
@@ -263,5 +290,13 @@ defmodule AbsintheWebSocket.WebSocket do
     Logger.info "#{__MODULE__} - Msg: #{inspect msg}"
 
     {:ok, state}
+  end
+
+  def handle_resubscribe(socket, state) do
+    state
+    |> Map.get(:subscriptions_info, %{})
+    |> Enum.each(fn {sub_name, {pid, query, variables}} ->
+      subscribe(socket, pid, sub_name, query, variables)
+    end)
   end
 end
