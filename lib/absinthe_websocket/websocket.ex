@@ -246,15 +246,36 @@ defmodule AbsintheWebSocket.WebSocket do
         end
 
         subscription_id = payload["response"]["subscriptionId"]
-        subscriptions = Map.put(state.subscriptions, subscription_id, {pid, subscription_name})
-        Map.put(state, :subscriptions, subscriptions)
-      {:unsubscribe, _pid, _subscription_name} ->
+
+        subscriptions =
+          Map.update(
+            state.subscriptions,
+            subscription_id,
+            %{subscription_name => pid},
+            &Map.put(&1, subscription_name, pid)
+          )
+
+        state = Map.put(state, :subscriptions, subscriptions)
+        state
+      {:unsubscribe, _pid, subscription_name} ->
         unless status == :ok do
           raise "Unsubscribe Error - #{inspect payload}"
         end
 
         subscription_id = payload["response"]["subscriptionId"]
-        subscriptions = Map.delete(state.subscriptions, subscription_id)
+
+        subscription =
+          state.subscriptions
+          |> Map.get(subscription_id, %{})
+          |> Map.delete(subscription_name)
+
+        subscriptions =
+          if Enum.empty?(subscription) do
+            Map.delete(state.subscriptions, subscription_id)
+          else
+            Map.put(state.subscriptions, subscription_id, subscription)
+          end
+
         Map.put(state, :subscriptions, subscriptions)
       {:join} ->
         unless status == :ok do
@@ -277,11 +298,14 @@ defmodule AbsintheWebSocket.WebSocket do
 
   def handle_msg(%{"event" => "subscription:data", "payload" => payload, "topic" => subscription_id}, %{subscriptions: subscriptions} = state) do
     # Logger.info "#{__MODULE__} - Subscription: #{inspect msg}"
-    {pid, subscription_name} = Map.get(subscriptions, subscription_id)
 
     data = payload["result"]["data"]
 
-    GenServer.cast(pid, {:subscription, subscription_name, data})
+    subscriptions
+    |> Map.get(subscription_id)
+    |> Enum.each(fn {subscription_name, pid} ->
+      GenServer.cast(pid, {:subscription, subscription_name, data})
+    end)
 
     {:ok, state}
   end
