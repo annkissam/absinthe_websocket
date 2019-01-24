@@ -251,8 +251,8 @@ defmodule AbsintheWebSocket.WebSocket do
           Map.update(
             state.subscriptions,
             subscription_id,
-            %{subscription_name => pid},
-            &Map.put(&1, subscription_name, pid)
+            [{subscription_name, pid}],
+            &[{subscription_name, pid} | &1]
           )
 
         state = Map.put(state, :subscriptions, subscriptions)
@@ -264,16 +264,13 @@ defmodule AbsintheWebSocket.WebSocket do
 
         subscription_id = payload["response"]["subscriptionId"]
 
-        subscription =
-          state.subscriptions
-          |> Map.get(subscription_id, %{})
-          |> Map.delete(subscription_name)
-
         subscriptions =
-          if Enum.empty?(subscription) do
-            Map.delete(state.subscriptions, subscription_id)
-          else
-            Map.put(state.subscriptions, subscription_id, subscription)
+          state.subscriptions
+          |> Map.get(subscription_id, [])
+          |> List.keydelete(subscription_name, 0)
+          |> case do
+            [] -> Map.delete(state.subscriptions, subscription_id)
+            subscription -> Map.put(state.subscriptions, subscription_id, subscription)
           end
 
         Map.put(state, :subscriptions, subscriptions)
