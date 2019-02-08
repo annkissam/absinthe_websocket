@@ -14,8 +14,8 @@ defmodule AbsintheWebSocket.QueryServer do
     {:ok, state}
   end
 
-  def post(mod, query, variables \\ []) do
-    GenServer.call(mod, {:post, query, variables})
+  def post(mod, query, variables \\ [], opts \\ []) do
+    GenServer.call(mod, {:post, query, variables}, opts[:timeout] || 5_000)
   end
 
   def handle_call({:post, query, variables}, from, %{socket: socket, queries: queries} = state) do

@@ -231,12 +231,12 @@ defmodule AbsintheWebSocket.WebSocket do
 
     state = case command do
       {:query, pid, ref} ->
+        errors = payload["response"]["errors"]
         case status do
           :ok ->
             data = payload["response"]["data"]
-            GenServer.cast(pid, {:query_response, ref, {status, data}})
+            GenServer.cast(pid, {:query_response, ref, {status, data, errors}})
           :error ->
-            errors = payload["response"]["errors"]
             GenServer.cast(pid, {:query_response, ref, {status, errors}})
         end
         state
