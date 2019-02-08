@@ -1,7 +1,7 @@
 defmodule AbsintheWebSocket.Mixfile do
   use Mix.Project
 
-  @version "0.2.1"
+  @version "0.2.2"
   @url "https://github.com/annkissam/absinthe_websocket"
   @maintainers [
     "Eric Sullivan",
