@@ -21,6 +21,7 @@ defmodule AbsintheWebSocket.Supervisor do
     url = Keyword.get(args, :url)
     token = Keyword.get(args, :token)
     subscriber = Keyword.get(args, :subscriber)
+    async = Keyword.get(args, :async, true)
 
     websocket_worker_args =
       [subscription_server: subscription_server_name, url: url, token: token] ++
@@ -29,7 +30,7 @@ defmodule AbsintheWebSocket.Supervisor do
     children = [
       worker(AbsintheWebSocket.QueryServer, [[socket: socket_name],[name: query_server_name]]),
       worker(AbsintheWebSocket.SubscriptionServer, [[socket: socket_name, subscriber: subscriber], [name: subscription_server_name]]),
-      worker(AbsintheWebSocket.WebSocket, [websocket_worker_args, [name: socket_name]]),
+      worker(AbsintheWebSocket.WebSocket, [websocket_worker_args, [async: async, name: socket_name]]),
     ]
 
     # restart everything on failures
