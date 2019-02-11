@@ -7,6 +7,7 @@ defmodule AbsintheWebSocket.WebSocket do
 
   def start_link(args, opts) do
     name = Keyword.get(opts, :name)
+    async = Keyword.get(opts, :async)
     url = Keyword.get(args, :url)
     token = Keyword.get(args, :token)
     full_url = if token do
@@ -29,7 +30,7 @@ defmodule AbsintheWebSocket.WebSocket do
       resubscribe_on_disconnect: resubscribe_on_disconnect,
       disconnect_sleep: disconnect_sleep
     }
-    WebSockex.start_link(full_url, __MODULE__, state, handle_initial_conn_failure: true, async: true, name: name)
+    WebSockex.start_link(full_url, __MODULE__, state, handle_initial_conn_failure: true, async: async, name: name)
   end
 
   def query(socket, pid, ref, query, variables \\ []) do
