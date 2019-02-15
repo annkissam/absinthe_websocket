@@ -36,8 +36,8 @@ defmodule AbsintheWebSocket.WebSocket do
     WebSockex.cast(socket, {:query, {pid, ref, query, variables}})
   end
 
-  def subscribe(socket, pid, subscription_name, query, variables \\ []) do
-    WebSockex.cast(socket, {:subscribe, {pid, subscription_name, query, variables}})
+  def subscribe(socket, pid, subscription_name, query, variables \\ [], opts \\ []) do
+    WebSockex.cast(socket, {:subscribe, {pid, subscription_name, query, variables, opts}})
   end
 
   def unsubscribe(socket, pid, subscription_name) do
@@ -147,62 +147,86 @@ defmodule AbsintheWebSocket.WebSocket do
     {:reply, {:text, msg}, state}
   end
 
-  def handle_cast({:subscribe, {pid, subscription_name, query, variables}}, %{queries: queries, msg_ref: msg_ref} = state) do
-    doc = %{
-      "query" => query,
-      "variables" => variables,
-    }
+  def handle_cast({:subscribe, {pid, subscription_name, query, variables, opts}}, %{queries: queries, msg_ref: msg_ref} = state) do
+    subscriptions = get_in(state, [:subscriptions_info, subscription_name])
 
-    msg = %{
-      topic: "__absinthe__:control",
-      event: "doc",
-      payload: doc,
-      ref: msg_ref
-    } |> Poison.encode!
+    if is_nil(subscriptions) || opts[:resubscribe] do
+      doc = %{
+        "query" => query,
+        "variables" => variables,
+      }
 
-    queries = Map.put(queries, msg_ref, {:subscribe, pid, subscription_name})
-
-    subscriptions_info =
-      state
-      |> Map.get(:subscriptions_info, %{})
-      |> Map.put(subscription_name, {pid, query, variables})
-
-    state = state
-    |> Map.put(:queries, queries)
-    |> Map.put(:msg_ref, msg_ref + 1)
-    |> Map.put(:subscriptions_info, subscriptions_info)
-
-    {:reply, {:text, msg}, state}
-  end
-
-  def handle_cast({:unsubscribe, {pid, subscription_name}}, %{queries: queries, msg_ref: msg_ref} = state) do
-    subscription = Enum.find(state.subscriptions, fn
-      {_, {^pid, ^subscription_name}} -> true
-      _ -> false
-    end)
-
-    with {subscription_id, _} <- subscription do
       msg = %{
         topic: "__absinthe__:control",
-        event: "unsubscribe",
-        payload: %{"subscriptionId" => subscription_id},
+        event: "doc",
+        payload: doc,
         ref: msg_ref
       } |> Poison.encode!
 
-      queries = Map.put(queries, msg_ref, {:unsubscribe, pid, subscription_name})
+      queries = Map.put(queries, msg_ref, {:subscribe, pid, subscription_name})
 
       subscriptions_info =
         state
         |> Map.get(:subscriptions_info, %{})
-        |> Map.delete(subscription_name)
+        |> Map.put(subscription_name, {pid, query, variables})
 
-      state = state
-      |> Map.put(:queries, queries)
-      |> Map.put(:msg_ref, msg_ref + 1)
-      |> Map.put(:subscriptions_info, subscriptions_info)
+      state =
+        state
+        |> Map.put(:queries, queries)
+        |> Map.put(:msg_ref, msg_ref + 1)
+        |> Map.put(:subscriptions_info, subscriptions_info)
 
       {:reply, {:text, msg}, state}
+
     else
+      {:ok, state}
+    end
+  end
+
+  def handle_cast({:unsubscribe, {pid, subscription_name}}, %{queries: queries, msg_ref: msg_ref} = state) do
+    subscription =
+      Enum.find(state.subscriptions, fn {_, subscriptions} ->
+        List.keymember?(subscriptions, subscription_name, 0)
+      end)
+
+    subscriptions_info =
+      state
+      |> Map.get(:subscriptions_info, %{})
+      |> Map.delete(subscription_name)
+
+
+    case subscription do
+      {subscription_id, subscriptions} ->
+        case List.keydelete(subscriptions, subscription_name, 0) do
+          [] ->
+            msg =
+              %{
+                topic: "__absinthe__:control",
+                event: "unsubscribe",
+                payload: %{"subscriptionId" => subscription_id},
+                ref: msg_ref
+              }
+              |> Poison.encode!()
+
+            queries = Map.put(queries, msg_ref, {:unsubscribe, pid, subscription_name})
+
+            state =
+              state
+              |> Map.put(:queries, queries)
+              |> Map.put(:msg_ref, msg_ref + 1)
+              |> Map.put(:subscriptions_info, subscriptions_info)
+
+            {:reply, {:text, msg}, state}
+
+          subscriptions ->
+            state =
+              state
+              |> Map.update!(:subscriptions, &Map.put(&1, subscription_id, subscriptions))
+              |> Map.put(:subscriptions_info, subscriptions_info)
+
+            {:ok, state}
+        end
+
       _ -> {:ok, state}
     end
   end
@@ -317,7 +341,7 @@ defmodule AbsintheWebSocket.WebSocket do
     state
     |> Map.get(:subscriptions_info, %{})
     |> Enum.each(fn {sub_name, {pid, query, variables}} ->
-      subscribe(socket, pid, sub_name, query, variables)
+      subscribe(socket, pid, sub_name, query, variables, resubscribe: true)
     end)
   end
 end
