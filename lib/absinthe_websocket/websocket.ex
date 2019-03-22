@@ -63,6 +63,8 @@ defmodule AbsintheWebSocket.WebSocket do
   def handle_disconnect(map, %{heartbeat_timer: heartbeat_timer} = state) do
     Logger.error "#{__MODULE__} - Disconnected: #{inspect map}"
 
+    GenServer.cast(state.subscription_server, {:disconnected})
+
     if heartbeat_timer do
       :timer.cancel(heartbeat_timer)
     end
