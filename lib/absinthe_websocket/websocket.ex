@@ -18,6 +18,7 @@ defmodule AbsintheWebSocket.WebSocket do
     end
     subscription_server = Keyword.get(args, :subscription_server)
     resubscribe_on_disconnect = Keyword.get(args, :resubscribe_on_disconnect, false)
+    disconnect_callback = Keyword.get(args, :disconnect_callback, nil)
     disconnect_sleep = Keyword.get(args, :disconnect_sleep, @disconnect_sleep)
     state = %{
       subscriptions: %{},
@@ -28,7 +29,9 @@ defmodule AbsintheWebSocket.WebSocket do
       socket: name,
       subscription_server: subscription_server,
       resubscribe_on_disconnect: resubscribe_on_disconnect,
-      disconnect_sleep: disconnect_sleep
+      disconnect_callback: disconnect_callback,
+      disconnect_sleep: disconnect_sleep,
+      ready: false
     }
     WebSockex.start_link(full_url, __MODULE__, state, handle_initial_conn_failure: true, async: async, name: name)
   end
@@ -43,6 +46,14 @@ defmodule AbsintheWebSocket.WebSocket do
 
   def unsubscribe(socket, pid, subscription_name) do
     WebSockex.cast(socket, {:unsubscribe, {pid, subscription_name}})
+  end
+
+  def set_opt(socket, opt, value) do
+    WebSockex.cast(socket, {:set_opt, opt, value})
+  end
+
+  def close(socket) do
+    WebSockex.cast(socket, :close)
   end
 
   def handle_connect(_conn, %{socket: socket} = state) do
@@ -71,9 +82,13 @@ defmodule AbsintheWebSocket.WebSocket do
 
     state = Map.put(state, :heartbeat_timer, nil)
 
+    if state.disconnect_callback do
+      state.disconnect_callback.()
+    end
+
     :timer.sleep(state.disconnect_sleep)
 
-    {:reconnect, state}
+    {:reconnect, %{state | ready: false}}
   end
 
   def handle_info(:heartbeat, %{socket: socket} = state) do
@@ -210,6 +225,14 @@ defmodule AbsintheWebSocket.WebSocket do
     end
   end
 
+  def handle_cast({:set_opt, opt, value}, state) do
+    {:ok, %{state | opt => value}}
+  end
+
+  def handle_cast(:close, state) do
+    {:close, state}
+  end
+
   def handle_cast(message, state) do
     Logger.info "#{__MODULE__} - Cast: #{inspect message}"
 
@@ -266,7 +289,7 @@ defmodule AbsintheWebSocket.WebSocket do
 
         GenServer.cast(state.subscription_server, {:joined})
 
-        state
+        %{state | ready: true}
       {:heartbeat} ->
         unless status == :ok do
           raise "Heartbeat Error - #{inspect payload}"
