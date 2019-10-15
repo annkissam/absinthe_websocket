@@ -31,7 +31,8 @@ defmodule AbsintheWebSocket.WebSocket do
       resubscribe_on_disconnect: resubscribe_on_disconnect,
       disconnect_callback: disconnect_callback,
       disconnect_sleep: disconnect_sleep,
-      ready: false
+      ready: false,
+      log_disconnect: true
     }
     WebSockex.start_link(full_url, __MODULE__, state, handle_initial_conn_failure: true, async: async, name: name)
   end
@@ -72,7 +73,9 @@ defmodule AbsintheWebSocket.WebSocket do
   end
 
   def handle_disconnect(map, %{heartbeat_timer: heartbeat_timer} = state) do
-    Logger.error "#{__MODULE__} - Disconnected: #{inspect map}"
+    if state.log_disconnect do
+      Logger.error "#{__MODULE__} - Disconnected: #{inspect map}"
+    end
 
     GenServer.cast(state.subscription_server, {:disconnected})
 
