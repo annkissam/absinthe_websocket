@@ -36,8 +36,7 @@ defmodule AbsintheWebSocket.SubscriptionServer do
   def handle_cast({:subscribe, subscription_name, callback, query, variables}, %{socket: socket, subscriptions: subscriptions} = state) do
     AbsintheWebSocket.WebSocket.subscribe(socket, self(), subscription_name, query, variables)
 
-    callbacks = Map.get(subscriptions, subscription_name, [])
-    subscriptions = Map.put(subscriptions, subscription_name, [callback | callbacks])
+    subscriptions = Map.put(subscriptions, subscription_name, [callback])
     state = Map.put(state, :subscriptions, subscriptions)
 
     {:noreply, state}

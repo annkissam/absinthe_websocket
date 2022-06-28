@@ -1,15 +1,15 @@
 defmodule AbsintheWebSocket.Mixfile do
   use Mix.Project
 
-  @version "0.2.2"
-  @url "https://github.com/annkissam/absinthe_websocket"
+  @version "0.2.3"
+  @url "https://github.com/karlosmid/absinthe_websocket"
   @maintainers [
-    "Eric Sullivan",
+    "Karlo Šmid",
   ]
 
   def project do
     [
-      app: :absinthe_websocket,
+      app: :absinthe_websocket_hr,
       version: @version,
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
@@ -35,7 +35,7 @@ defmodule AbsintheWebSocket.Mixfile do
     [
       {:websockex, "~> 0.4"},
       {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"},
-      {:ex_doc, "~> 0.19", only: :dev},
+      {:ex_doc, "~> 0.28", only: :dev},
     ]
   end
 
@@ -48,7 +48,7 @@ defmodule AbsintheWebSocket.Mixfile do
 
   defp package do
     [
-      name: :absinthe_websocket,
+      name: :absinthe_websocket_hr,
       maintainers: @maintainers,
       licenses: ["MIT"],
       links: %{github: @url},
